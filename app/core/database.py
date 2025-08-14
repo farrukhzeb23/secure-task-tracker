@@ -3,13 +3,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.engine import URL
 from app.core.config import settings
 
-url = URL.create(
-    drivername="postgresql",
-    username=settings.DB_USER,
-    password=settings.DB_PASSWORD,
-    host=settings.DB_HOST,
-    port=int(settings.DB_PORT)
-)
+url = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 
 engine = create_engine(url)
 SessionLocal = sessionmaker(autoflush=False, bind=engine, autocommit=False)
