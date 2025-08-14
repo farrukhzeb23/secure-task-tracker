@@ -6,6 +6,10 @@ app = FastAPI(title=settings.APP_NAME)
 app.include_router(users.router, prefix="/api/v1")
 
 
-@app.get('/')
-def read_root():
-    return {"message": "Welcome to Secure Tracker API!"}
+@app.get('/health')
+def health_check():
+    return {
+        "status": "healthy",
+        "message": "Service is running",
+        "app_name": settings.APP_NAME
+    }
