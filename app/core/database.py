@@ -1,12 +1,13 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.engine import URL
 from app.core.config import settings
 
-url = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+url = f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 
-engine = create_engine(url)
-SessionLocal = sessionmaker(autoflush=False, bind=engine, autocommit=False)
+async_engine = create_async_engine(url)
+AysncSessionLocal = async_sessionmaker(
+    autoflush=False, bind=async_engine, autocommit=False, class_=AsyncSession)
 
 Base = declarative_base()
 
@@ -17,9 +18,14 @@ Pauses execution at the yield statement and returns the database session (db) to
 Waits for the caller to finish using the database session
 Resumes execution after yield when the caller is done, running the finally block to clean up
 """
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+
+
+async def get_db():
+    async with AysncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
