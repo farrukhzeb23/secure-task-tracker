@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+import uuid
 
 
 # revision identifiers, used by Alembic.
@@ -22,7 +23,7 @@ def upgrade() -> None:
     """Upgrade schema."""
     op.create_table(
         "users",
-        sa.Column("id", sa.UUID, primary_key=True),
+        sa.Column("id", sa.UUID, primary_key=True, default=uuid.uuid4),
         sa.Column("email", sa.String(255), unique=True,
                   index=True, nullable=False),
         sa.Column("username", sa.String(50), unique=True,

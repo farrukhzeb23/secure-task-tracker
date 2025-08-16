@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr
+from uuid import UUID
 
 
 class UserBase(BaseModel):
@@ -22,7 +23,7 @@ class UserUpdate(BaseModel):
 
 
 class User(UserBase):
-    id: str
+    id: UUID
     is_active: bool = True
     created_at: datetime
     updated_at: Optional[datetime] = None
