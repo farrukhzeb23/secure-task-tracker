@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from app.schemas.user import UserCreate
 from app.models.user import User
+from app.core.security import hash_password
 
 
 async def create_user(user: UserCreate, db: AsyncSession) -> User:
@@ -13,13 +14,13 @@ async def create_user(user: UserCreate, db: AsyncSession) -> User:
             email=user.email,
             username=user.username,
             full_name=user.full_name,
-            password=user.password
+            password=hash_password(user.password)
         )
         db.add(db_user)
         await db.commit()
         await db.refresh(db_user)
         return db_user
-    except IntegrityError as integrity_error:
+    except IntegrityError:
         raise HTTPException(
             status_code=400, detail="Email or Username must be unique")
 
