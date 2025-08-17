@@ -20,7 +20,8 @@ async def create_user(user: UserCreate, db: AsyncSession) -> User:
         await db.refresh(db_user)
         return db_user
     except IntegrityError as integrity_error:
-        raise HTTPException(status_code=400, detail=str(integrity_error))
+        raise HTTPException(
+            status_code=400, detail="Email or Username must be unique")
 
 
 async def get_all_users(db: AsyncSession) -> Sequence[User]:
