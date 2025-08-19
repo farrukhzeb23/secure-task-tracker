@@ -1,6 +1,6 @@
 import pytest
 import httpx
-from app.schemas.user import UserCreate
+# from app.schemas.user import UserCreate
 
 
 @pytest.mark.asyncio
@@ -37,7 +37,7 @@ async def test_create_user_email_already_exists(client: httpx.AsyncClient):
     result = response.json()
 
     assert response.status_code == 400
-    assert result["detail"] == "Email or Username must be unique"
+    assert result["detail"] == "Email already exists choose another email"
 
 
 @pytest.mark.asyncio
