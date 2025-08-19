@@ -9,15 +9,15 @@ from app.core.security import hash_password
 
 async def create_user(user: UserCreate, db: AsyncSession) -> User:
 
-    email_result = await db.execute(select(User).where((User.email == user.email)))
+    existing_user = await get_user_by_email(user.email, db)
 
-    if email_result.scalar_one_or_none():
+    if existing_user:
         raise HTTPException(
             status_code=400, detail="Email already exists choose another email")
 
-    username_result = await db.execute(select(User).where((User.username == user.username)))
+    existing_user = await get_user_by_username(user.username, db)
 
-    if username_result.scalar_one_or_none():
+    if existing_user:
         raise HTTPException(
             status_code=400, detail="Username already exists choose another username")
 
@@ -40,3 +40,13 @@ async def create_user(user: UserCreate, db: AsyncSession) -> User:
 async def get_all_users(db: AsyncSession) -> Sequence[User]:
     result = await db.execute(select(User))
     return result.scalars().all()
+
+
+async def get_user_by_email(email: str, db: AsyncSession) -> User | None:
+    result = await db.execute(select(User).where(User.email == email))
+    return result.scalar_one_or_none()
+
+
+async def get_user_by_username(username: str, db: AsyncSession) -> User | None:
+    result = await db.execute(select(User).where(User.username == username))
+    return result.scalar_one_or_none()
