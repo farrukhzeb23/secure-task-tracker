@@ -17,6 +17,10 @@ import httpx
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.core.database import Base, get_db
 from app.main import app
+from datetime import timedelta, datetime, timezone
+from app.core.security import create_access_token, create_refresh_token, hash_refresh_token
+from app.core.config import settings
+from app.models.refresh_token import RefreshToken
 
 # Use SQLite in-memory database for testing
 """
@@ -60,3 +64,39 @@ async def client(db):
         transport=httpx.ASGITransport(app=app)
     ) as ac:
         yield ac
+
+
+@pytest.fixture
+async def test_user(db):
+    from app.models.user import User
+    from app.core.security import hash_password
+    user = User(
+        email="testuser@example.com",
+        username="test.user",
+        full_name="test user",
+        password=hash_password("testpass")
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def test_refresh_token(db, test_user):
+    refresh_token = create_refresh_token()
+    expires_at = datetime.now(timezone.utc) + \
+        timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    db_refresh_token = RefreshToken(
+        user_id=test_user.id,
+        token_hash=hash_refresh_token(refresh_token),
+        expires_at=expires_at
+    )
+    db.add(db_refresh_token)
+    await db.commit()
+    return refresh_token
+
+
+@pytest.fixture
+def test_access_token(test_user):
+    return create_access_token(data={"sub": str(test_user.id)})

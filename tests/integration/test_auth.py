@@ -37,3 +37,57 @@ async def test_register_user_email_already_exists(client: httpx.AsyncClient):
 
     assert response.status_code == 400
     assert result["detail"] == "Email already exists choose another email"
+
+
+@pytest.mark.asyncio
+async def test_login_for_access_token(client: httpx.AsyncClient, test_user):
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "testuser@example.com", "password": "testpass"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    assert "refresh_token" in response.json()
+    assert response.json()["token_type"] == "bearer"
+
+
+@pytest.mark.asyncio
+async def test_refresh_token(client: httpx.AsyncClient, test_refresh_token):
+    response = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": test_refresh_token},
+    )
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+    assert "refresh_token" in response.json()
+    assert response.json()["token_type"] == "bearer"
+
+
+@pytest.mark.asyncio
+async def test_read_users_me(client: httpx.AsyncClient, test_access_token):
+    response = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {test_access_token}"})
+    assert response.status_code == 200
+    assert response.json()["email"] == "testuser@example.com"
+
+
+@pytest.mark.asyncio
+async def test_login_invalid_credentials(client: httpx.AsyncClient):
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "wronguser", "password": "wrongpass"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 404
+    assert response.json()[
+        "detail"] == "User with email wronguser does not exists"
+
+
+@pytest.mark.asyncio
+async def test_refresh_invalid_token(client: httpx.AsyncClient):
+    response = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": "invalid_token"},
+    )
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid or expired refresh token"

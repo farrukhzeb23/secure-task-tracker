@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     DB_USER: str = "postgres"
     DB_PASSWORD: str = "password"
 
+    # JWT
+    SECRET_KEY: str = "some_scret"
+    ACCESS_TOKEN_EXPIRE_MINS: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
     class Config:
         env_file = ".env"
 
