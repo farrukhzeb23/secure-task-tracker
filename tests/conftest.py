@@ -15,6 +15,7 @@ requiring explicit imports.
 import pytest
 import httpx
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy import text
 from app.core.database import Base, get_db
 from app.main import app
 from datetime import timedelta, datetime, timezone
@@ -46,6 +47,12 @@ AsyncSessionLocal = async_sessionmaker(
 async def db():
     async with test_engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
+        # Insert default roles
+        await connection.execute(text("""
+            INSERT INTO roles (id, name, description) VALUES 
+            ('2f14539c-89f5-4222-b518-69392c45c6fd', 'admin', 'Administrator with full access'),
+            ('42bc5587-b83f-4232-bf53-1b3ab60902f2', 'user', 'Regular user with limited access')
+        """))
     async with AsyncSessionLocal() as db:
         yield db
     async with test_engine.begin() as connection:
@@ -70,6 +77,7 @@ async def client(db):
 async def test_user(db):
     from app.models.user import User
     from app.core.security import hash_password
+    from app.services.user_service import assign_roles_to_user
     user = User(
         email="testuser@example.com",
         username="test.user",
@@ -79,6 +87,25 @@ async def test_user(db):
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    return user
+
+
+@pytest.fixture
+async def test_admin_user(db):
+    from app.models.user import User
+    from app.core.security import hash_password
+    from app.services.user_service import assign_roles_to_user
+    user = User(
+        email="admin@example.com",
+        username="admin.user",
+        full_name="admin user",
+        password=hash_password("testpass")
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    await assign_roles_to_user(str(user.id), ["admin"], db)
+    await db.commit()
     return user
 
 
@@ -100,3 +127,8 @@ async def test_refresh_token(db, test_user):
 @pytest.fixture
 def test_access_token(test_user):
     return create_access_token(data={"sub": str(test_user.id)})
+
+
+@pytest.fixture
+def test_admin_access_token(test_admin_user):
+    return create_access_token(data={"sub": str(test_admin_user.id)})

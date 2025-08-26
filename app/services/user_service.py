@@ -1,10 +1,12 @@
 from fastapi import HTTPException
-from typing import Sequence
+from typing import Sequence, Optional
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.user import UserCreate
 from app.models.user import User
 from app.core.security import hash_password
+from app.services.role_service import assign_roles_to_user, get_user_with_roles
 
 
 async def create_user(user: UserCreate, db: AsyncSession) -> User:
@@ -31,14 +33,23 @@ async def create_user(user: UserCreate, db: AsyncSession) -> User:
         db.add(db_user)
         await db.commit()
         await db.refresh(db_user)
-        return db_user
-    except:
+
+        # Assign roles to user
+        if user.role_names:
+            await assign_roles_to_user(str(db_user.id), user.role_names, db)
+            await db.commit()  # Commit the role assignments
+
+        return await get_user_with_roles(str(db_user.id), db)
+    except Exception as error:
+        await db.rollback()  # Rollback on any error
         raise HTTPException(
-            status_code=500, detail="Something went wrong when creating the user")
+            status_code=500,
+            detail=f"Error creating user: {str(error)}"
+        )
 
 
 async def get_all_users(db: AsyncSession) -> Sequence[User]:
-    result = await db.execute(select(User))
+    result = await db.execute(select(User).options(selectinload(User.roles)))
     return result.scalars().all()
 
 

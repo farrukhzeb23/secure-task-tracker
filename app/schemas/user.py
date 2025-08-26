@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, EmailStr
 from uuid import UUID
+from app.schemas.role import Role
 
 
 class UserBase(BaseModel):
@@ -12,6 +13,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    role_names: Optional[List[str]] = ["user"]
 
 
 class UserUpdate(BaseModel):
@@ -20,6 +22,7 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     is_active: Optional[bool] = None
     password: Optional[str] = None
+    role_names: Optional[List[str]] = None
 
 
 class User(UserBase):
@@ -27,6 +30,7 @@ class User(UserBase):
     is_active: bool = True
     created_at: datetime
     updated_at: Optional[datetime] = None
+    roles: List[Role] = []
 
     class Config:
         from_attributes = True

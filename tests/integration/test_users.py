@@ -3,18 +3,13 @@ import httpx
 
 
 @pytest.mark.asyncio
-async def test_get_all_users(client: httpx.AsyncClient):
-    user_data = {
-        "email": "test@example.com",
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "password": "testing123"
-    }
-
-    # Creating the user first
-    await client.post(url="/api/v1/auth/register", json=user_data)
-
-    response = await client.get(url="/api/v1/users/")
+async def test_get_all_users(client: httpx.AsyncClient, test_admin_access_token):
+    response = await client.get(
+        "/api/v1/users/",
+        headers={
+            "Authorization": f"Bearer {test_admin_access_token}"
+        }
+    )
     result = response.json()
     assert response.status_code == 200
     assert len(result) > 0

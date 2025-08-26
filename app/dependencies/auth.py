@@ -3,7 +3,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
+from sqlalchemy import select
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
@@ -25,7 +26,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
         user_id = uuid.UUID(user_id_str)
     except (JWTError, ValueError):
         raise credentials_exception
-    result = await db.execute(select(User).filter(User.id == user_id))
+    result = await db.execute(select(User).options(selectinload(User.roles)).filter(User.id == user_id))
     user = result.scalars().first()
     if user is None:
         raise credentials_exception
