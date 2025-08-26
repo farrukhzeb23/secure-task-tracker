@@ -47,11 +47,11 @@ AsyncSessionLocal = async_sessionmaker(
 async def db():
     async with test_engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
-        # Insert default roles
+        # Insert default roles without hyphens to match SQLAlchemy UUID format
         await connection.execute(text("""
             INSERT INTO roles (id, name, description) VALUES 
-            ('2f14539c-89f5-4222-b518-69392c45c6fd', 'admin', 'Administrator with full access'),
-            ('42bc5587-b83f-4232-bf53-1b3ab60902f2', 'user', 'Regular user with limited access')
+            ('2f14539c89f54222b51869392c45c6fd', 'admin', 'Administrator with full access'),
+            ('42bc5587b83f4232bf531b3ab60902f2', 'user', 'Regular user with limited access')
         """))
     async with AsyncSessionLocal() as db:
         yield db
@@ -77,7 +77,7 @@ async def client(db):
 async def test_user(db):
     from app.models.user import User
     from app.core.security import hash_password
-    from app.services.user_service import assign_roles_to_user
+    from app.services.role_service import assign_roles_to_user, get_user_with_roles
     user = User(
         email="testuser@example.com",
         username="test.user",
@@ -87,14 +87,18 @@ async def test_user(db):
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    return user
+    await assign_roles_to_user(str(user.id), ["user"], db)
+    await db.commit()
+    # Get user with roles to ensure the relationship is properly loaded
+    user_with_roles = await get_user_with_roles(str(user.id), db)
+    return user_with_roles
 
 
 @pytest.fixture
 async def test_admin_user(db):
     from app.models.user import User
     from app.core.security import hash_password
-    from app.services.user_service import assign_roles_to_user
+    from app.services.role_service import assign_roles_to_user, get_user_with_roles
     user = User(
         email="admin@example.com",
         username="admin.user",
@@ -106,7 +110,9 @@ async def test_admin_user(db):
     await db.refresh(user)
     await assign_roles_to_user(str(user.id), ["admin"], db)
     await db.commit()
-    return user
+    # Get user with roles to ensure the relationship is properly loaded
+    user_with_roles = await get_user_with_roles(str(user.id), db)
+    return user_with_roles
 
 
 @pytest.fixture
