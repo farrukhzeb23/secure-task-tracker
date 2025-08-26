@@ -21,11 +21,6 @@ async def handle_refresh_token(request: RefreshTokenRequest, db: AsyncSession = 
     return await refresh_access_token(db, refresh_token=request.refresh_token)
 
 
-@router.get('/me', status_code=status.HTTP_200_OK, response_model=User)
-async def handle_get_current_user(current_user: User = Depends(get_current_user)):
-    return current_user
-
-
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=User)
 async def handle_register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     return await create_user(user, db)

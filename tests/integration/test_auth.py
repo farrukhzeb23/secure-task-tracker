@@ -65,13 +65,6 @@ async def test_refresh_token(client: httpx.AsyncClient, test_refresh_token):
 
 
 @pytest.mark.asyncio
-async def test_read_users_me(client: httpx.AsyncClient, test_access_token):
-    response = await client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {test_access_token}"})
-    assert response.status_code == 200
-    assert response.json()["email"] == "testuser@example.com"
-
-
-@pytest.mark.asyncio
 async def test_login_invalid_credentials(client: httpx.AsyncClient):
     response = await client.post(
         "/api/v1/auth/login",
