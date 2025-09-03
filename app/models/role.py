@@ -1,7 +1,9 @@
 import uuid
-from sqlalchemy import Column, UUID, String, DateTime
-from sqlalchemy.sql import func
+
+from sqlalchemy import UUID, Column, DateTime, String
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 from app.core.database import Base
 
 
@@ -15,11 +17,7 @@ class Role(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    users = relationship(
-        "User",
-        secondary="user_roles",
-        back_populates="roles"
-    )
+    users = relationship("User", secondary="user_roles", back_populates="roles")
 
     def __repr__(self):
         return f"<Role(id={self.id}, name='{self.name}')>"

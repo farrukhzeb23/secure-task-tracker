@@ -12,15 +12,22 @@ The conftest.py file is automatically discovered by pytest and makes fixtures
 available to all test files in the same directory and subdirectories without
 requiring explicit imports.
 """
-import pytest
+
+from datetime import datetime, timedelta, timezone
+
 import httpx
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+import pytest
 from sqlalchemy import text
-from app.core.database import Base, get_db
-from app.main import app
-from datetime import timedelta, datetime, timezone
-from app.core.security import create_access_token, create_refresh_token, hash_refresh_token
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from app.core.config import settings
+from app.core.database import Base, get_db
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    hash_refresh_token,
+)
+from app.main import app
 from app.models.refresh_token import RefreshToken
 
 # Use SQLite in-memory database for testing
@@ -48,11 +55,15 @@ async def db():
     async with test_engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
         # Insert default roles without hyphens to match SQLAlchemy UUID format
-        await connection.execute(text("""
+        await connection.execute(
+            text(
+                """
             INSERT INTO roles (id, name, description) VALUES 
             ('2f14539c89f54222b51869392c45c6fd', 'admin', 'Administrator with full access'),
             ('42bc5587b83f4232bf531b3ab60902f2', 'user', 'Regular user with limited access')
-        """))
+        """
+            )
+        )
     async with AsyncSessionLocal() as db:
         yield db
     async with test_engine.begin() as connection:
@@ -64,25 +75,26 @@ async def db():
 async def client(db):
     async def override_get_db():
         yield db
+
     app.dependency_overrides[get_db] = override_get_db
 
     async with httpx.AsyncClient(
-        base_url="http://test",
-        transport=httpx.ASGITransport(app=app)
+        base_url="http://test", transport=httpx.ASGITransport(app=app)
     ) as ac:
         yield ac
 
 
 @pytest.fixture
 async def test_user(db):
-    from app.models.user import User
     from app.core.security import hash_password
+    from app.models.user import User
     from app.services.role_service import assign_roles_to_user, get_user_with_roles
+
     user = User(
         email="testuser@example.com",
         username="test.user",
         full_name="test user",
-        password=hash_password("testpass")
+        password=hash_password("testpass"),
     )
     db.add(user)
     await db.commit()
@@ -96,14 +108,15 @@ async def test_user(db):
 
 @pytest.fixture
 async def test_admin_user(db):
-    from app.models.user import User
     from app.core.security import hash_password
+    from app.models.user import User
     from app.services.role_service import assign_roles_to_user, get_user_with_roles
+
     user = User(
         email="admin@example.com",
         username="admin.user",
         full_name="admin user",
-        password=hash_password("testpass")
+        password=hash_password("testpass"),
     )
     db.add(user)
     await db.commit()
@@ -118,12 +131,13 @@ async def test_admin_user(db):
 @pytest.fixture
 async def test_refresh_token(db, test_user):
     refresh_token = create_refresh_token()
-    expires_at = datetime.now(timezone.utc) + \
-        timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )
     db_refresh_token = RefreshToken(
         user_id=test_user.id,
         token_hash=hash_refresh_token(refresh_token),
-        expires_at=expires_at
+        expires_at=expires_at,
     )
     db.add(db_refresh_token)
     await db.commit()

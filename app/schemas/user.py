@@ -1,7 +1,9 @@
 from datetime import datetime
-from typing import Optional, List
-from pydantic import BaseModel, EmailStr
+from typing import List, Optional
 from uuid import UUID
+
+from pydantic import BaseModel, EmailStr
+
 from app.schemas.role import Role
 
 

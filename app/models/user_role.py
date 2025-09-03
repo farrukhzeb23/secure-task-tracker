@@ -1,6 +1,8 @@
-from sqlalchemy import Column, ForeignKey, DateTime, UUID
-from sqlalchemy.sql import func
 import uuid
+
+from sqlalchemy import UUID, Column, DateTime, ForeignKey
+from sqlalchemy.sql import func
+
 from app.core.database import Base
 
 

@@ -5,17 +5,25 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
-class RoleBase(BaseModel):
-    name: str
+class TaskBase(BaseModel):
+    title: str
     description: Optional[str] = None
 
 
-class RoleCreate(RoleBase):
+class TaskCreate(TaskBase):
     pass
 
 
-class Role(RoleBase):
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    is_completed: Optional[bool] = None
+
+
+class Task(TaskBase):
     id: UUID
+    is_completed: bool = False
+    user_id: UUID
     created_at: datetime
     updated_at: Optional[datetime] = None
 

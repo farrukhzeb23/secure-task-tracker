@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, UUID
-from sqlalchemy.sql import func
-from app.core.database import Base
 import uuid
+
+from sqlalchemy import UUID, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.sql import func
+
+from app.core.database import Base
 
 
 class RefreshToken(Base):

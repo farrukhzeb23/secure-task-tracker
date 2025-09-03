@@ -1,5 +1,5 @@
-import pytest
 import httpx
+import pytest
 
 
 @pytest.mark.asyncio
@@ -8,7 +8,7 @@ async def test_register_user(client: httpx.AsyncClient):
         "email": "test@example.com",
         "username": "johndoe",
         "full_name": "John Doe",
-        "password": "testing123"
+        "password": "testing123",
     }
 
     response = await client.post(url="/api/v1/auth/register", json=user_data)
@@ -22,7 +22,7 @@ async def test_register_user_email_already_exists(client: httpx.AsyncClient):
         "email": "test@example.com",
         "username": "johndoe",
         "full_name": "John Doe",
-        "password": "testing123"
+        "password": "testing123",
     }
 
     # Creating the user first
@@ -72,8 +72,7 @@ async def test_login_invalid_credentials(client: httpx.AsyncClient):
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
     assert response.status_code == 404
-    assert response.json()[
-        "detail"] == "User with email wronguser does not exists"
+    assert response.json()["detail"] == "User with email wronguser does not exists"
 
 
 @pytest.mark.asyncio

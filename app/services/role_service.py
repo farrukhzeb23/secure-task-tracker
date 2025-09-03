@@ -1,8 +1,10 @@
-from typing import List, Optional, Sequence
 import uuid
-from sqlalchemy import select, delete
+from typing import List, Optional, Sequence
+
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+
 from app.models.role import Role
 from app.models.user import User
 from app.models.user_role import UserRole
@@ -32,6 +34,7 @@ async def assign_roles_to_user(user_id: str, role_names: List[str], db: AsyncSes
         for role in roles:
             user_role = UserRole(user_id=user_uuid, role_id=role.id)
             db.add(user_role)
+        await db.flush()
     except ValueError as e:
         raise ValueError(f"Invalid user_id format: {e}")
     except Exception as e:
@@ -43,9 +46,7 @@ async def get_user_with_roles(user_id: str, db: AsyncSession) -> Optional[User]:
     try:
         user_uuid = uuid.UUID(user_id)
         result = await db.execute(
-            select(User)
-            .options(selectinload(User.roles))
-            .where(User.id == user_uuid)
+            select(User).options(selectinload(User.roles)).where(User.id == user_uuid)
         )
         return result.scalar_one_or_none()
     except ValueError as e:

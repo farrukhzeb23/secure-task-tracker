@@ -1,19 +1,20 @@
 """create users table
 
 Revision ID: 2aef78992b4d
-Revises: 
+Revises:
 Create Date: 2025-08-14 16:02:18.933664
 
 """
+
+import uuid
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-import uuid
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '2aef78992b4d'
+revision: str = "2aef78992b4d"
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,17 +25,15 @@ def upgrade() -> None:
     op.create_table(
         "users",
         sa.Column("id", sa.UUID, primary_key=True, default=uuid.uuid4),
-        sa.Column("email", sa.String(255), unique=True,
-                  index=True, nullable=False),
-        sa.Column("username", sa.String(50), unique=True,
-                  index=True, nullable=False),
+        sa.Column("email", sa.String(255), unique=True, index=True, nullable=False),
+        sa.Column("username", sa.String(50), unique=True, index=True, nullable=False),
         sa.Column("full_name", sa.String(100), nullable=False),
         sa.Column("password", sa.String(255), nullable=False),
         sa.Column("is_active", sa.Boolean, default=True),
-        sa.Column("created_at", sa.DateTime(timezone=True),
-                  server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(
-            timezone=True), onupdate=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.func.now()
+        ),
+        sa.Column("updated_at", sa.DateTime(timezone=True), onupdate=sa.func.now()),
     )
     pass
 
