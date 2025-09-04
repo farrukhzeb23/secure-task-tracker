@@ -96,14 +96,15 @@ async def test_user(db):
         full_name="test user",
         password=hash_password("testpass"),
     )
+    await assign_roles_to_user(user, ["user"], db)
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    await assign_roles_to_user(str(user.id), ["user"], db)
-    await db.commit()
-    # Get user with roles to ensure the relationship is properly loaded
-    user_with_roles = await get_user_with_roles(str(user.id), db)
-    return user_with_roles
+
+    # Load the relationships
+    await db.refresh(user, ["roles"])
+
+    return user
 
 
 @pytest.fixture
@@ -118,14 +119,17 @@ async def test_admin_user(db):
         full_name="admin user",
         password=hash_password("testpass"),
     )
+
+    await assign_roles_to_user(user, ["admin"], db)
+
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    await assign_roles_to_user(str(user.id), ["admin"], db)
-    await db.commit()
-    # Get user with roles to ensure the relationship is properly loaded
-    user_with_roles = await get_user_with_roles(str(user.id), db)
-    return user_with_roles
+
+    # Load the relationships
+    await db.refresh(user, ["roles"])
+
+    return user
 
 
 @pytest.fixture

@@ -34,15 +34,19 @@ async def create_user(user: UserCreate, db: AsyncSession) -> User:
             full_name=user.full_name,
             password=hash_password(user.password),
         )
-        db.add(db_user)
-        await db.commit()  # need to persist the user in the session
-        await db.refresh(db_user)
 
         # Assign roles to user
         if user.role_names:
-            await assign_roles_to_user(str(db_user.id), user.role_names, db)
+            await assign_roles_to_user(db_user, user.role_names, db)
 
-        return await get_user_with_roles(str(db_user.id), db)
+        db.add(db_user)
+        await db.commit()
+        await db.refresh(db_user)
+
+        # Load the relationships
+        await db.refresh(db_user, ["roles"])
+
+        return db_user
     except Exception as error:
         await db.rollback()  # Rollback on any error
         raise HTTPException(

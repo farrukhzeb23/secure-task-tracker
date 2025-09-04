@@ -7,7 +7,7 @@ from app.core.config import settings
 url = f"postgresql+asyncpg://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
 
 async_engine = create_async_engine(url)
-AysncSessionLocal = async_sessionmaker(
+AsyncSessionLocal = async_sessionmaker(
     autoflush=False, bind=async_engine, autocommit=False, class_=AsyncSession
 )
 
@@ -23,7 +23,7 @@ Resumes execution after yield when the caller is done, running the finally block
 
 
 async def get_db():
-    async with AysncSessionLocal() as session:
+    async with AsyncSessionLocal() as session:
         try:
             yield session
         except Exception:

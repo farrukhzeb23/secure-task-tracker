@@ -20,21 +20,17 @@ async def get_roles_by_names(names: List[str], db: AsyncSession) -> Sequence[Rol
     return result.scalars().all()
 
 
-async def assign_roles_to_user(user_id: str, role_names: List[str], db: AsyncSession):
+async def assign_roles_to_user(db_user: User, role_names: List[str], db: AsyncSession):
     try:
-        # Convert string to UUID
-        user_uuid = uuid.UUID(user_id)
-
         # Remove existing roles for this user
-        await db.execute(delete(UserRole).where(UserRole.user_id == user_uuid))
+        await db.execute(delete(UserRole).where(UserRole.user_id == db_user.id))
 
         # Get roles by names
         roles = await get_roles_by_names(role_names, db)
+
         # Assign new roles
-        for role in roles:
-            user_role = UserRole(user_id=user_uuid, role_id=role.id)
-            db.add(user_role)
-        await db.flush()
+        db_user.roles = roles
+
     except ValueError as e:
         raise ValueError(f"Invalid user_id format: {e}")
     except Exception as e:
@@ -46,7 +42,8 @@ async def get_user_with_roles(user_id: str, db: AsyncSession) -> Optional[User]:
     try:
         user_uuid = uuid.UUID(user_id)
         result = await db.execute(
-            select(User).options(selectinload(User.roles)).where(User.id == user_uuid)
+            select(User).options(selectinload(User.roles)).where(
+                User.id == user_uuid)
         )
         return result.scalar_one_or_none()
     except ValueError as e:
