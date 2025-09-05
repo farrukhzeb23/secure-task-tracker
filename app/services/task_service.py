@@ -1,8 +1,8 @@
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Tuple
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.task import Task
@@ -23,11 +23,29 @@ async def create_task(task: TaskCreate, user_id: UUID, db: AsyncSession) -> Task
         )
 
 
-async def get_tasks_by_user(user_id: UUID, db: AsyncSession) -> Sequence[Task]:
-    result = await db.execute(
-        select(Task).where(Task.user_id == user_id).order_by(Task.created_at.desc())
+async def get_tasks_by_user(
+    user_id: UUID, db: AsyncSession, page: int = 1, size: int = 10
+) -> Tuple[Sequence[Task], int]:
+    # Calculate offset
+    offset = (page - 1) * size
+
+    # Get total count
+    count_result = await db.execute(
+        select(func.count(Task.id)).where(Task.user_id == user_id)
     )
-    return result.scalars().all()
+    total_count = count_result.scalar() or 0
+
+    # Get paginated tasks
+    result = await db.execute(
+        select(Task)
+        .where(Task.user_id == user_id)
+        .order_by(Task.created_at.desc())
+        .offset(offset)
+        .limit(size)
+    )
+    tasks = result.scalars().all()
+
+    return tasks, total_count
 
 
 async def get_task_by_id(task_id: UUID, user_id: UUID, db: AsyncSession) -> Task | None:

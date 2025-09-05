@@ -44,9 +44,48 @@ class TestTasksAPI:
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
-        assert any(task["title"] == "Task 1" for task in data)
-        assert any(task["title"] == "Task 2" for task in data)
+        assert "items" in data
+        assert "meta" in data
+        assert len(data["items"]) == 2
+        assert data["meta"]["total"] == 2
+        assert data["meta"]["page"] == 1
+        assert data["meta"]["size"] == 10
+        assert any(task["title"] == "Task 1" for task in data["items"])
+        assert any(task["title"] == "Task 2" for task in data["items"])
+
+    async def test_get_user_tasks_pagination(
+        self, client: httpx.AsyncClient, test_access_token
+    ):
+        headers = {"Authorization": f"Bearer {test_access_token}"}
+
+        # Create 15 tasks
+        for i in range(15):
+            task_data = {"title": f"Task {i+1}", "description": f"Description {i+1}"}
+            await client.post("/api/v1/tasks/", json=task_data, headers=headers)
+
+        # Test first page with size 10
+        response = await client.get("/api/v1/tasks/?page=1&size=10", headers=headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 10
+        assert data["meta"]["total"] == 15
+        assert data["meta"]["page"] == 1
+        assert data["meta"]["pages"] == 2
+
+        # Test second page
+        response = await client.get("/api/v1/tasks/?page=2&size=10", headers=headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 5
+        assert data["meta"]["total"] == 15
+        assert data["meta"]["page"] == 2
+
+        # Test custom page size
+        response = await client.get("/api/v1/tasks/?page=1&size=5", headers=headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 5
+        assert data["meta"]["size"] == 5
 
     async def test_get_user_tasks_unauthorized(self, client: httpx.AsyncClient):
         response = await client.get("/api/v1/tasks/")
@@ -251,11 +290,11 @@ class TestTasksAPI:
         # User should only see their own task
         user_tasks_response = await client.get("/api/v1/tasks/", headers=user_headers)
         user_tasks = user_tasks_response.json()
-        assert len(user_tasks) == 1
-        assert user_tasks[0]["title"] == "User Task"
+        assert len(user_tasks["items"]) == 1
+        assert user_tasks["items"][0]["title"] == "User Task"
 
         # Admin should only see their own task
         admin_tasks_response = await client.get("/api/v1/tasks/", headers=admin_headers)
         admin_tasks = admin_tasks_response.json()
-        assert len(admin_tasks) == 1
-        assert admin_tasks[0]["title"] == "Admin Task"
+        assert len(admin_tasks["items"]) == 1
+        assert admin_tasks["items"][0]["title"] == "Admin Task"

@@ -1,13 +1,19 @@
-from typing import List
+import math
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.dependencies.auth import get_current_user
 from app.dependencies.rbac import require_admin
-from app.schemas.task import Task, TaskCreate, TaskUpdate
+from app.schemas.task import (
+    PaginatedTaskResponse,
+    PaginationMeta,
+    Task,
+    TaskCreate,
+    TaskUpdate,
+)
 from app.schemas.user import User
 from app.services.task_service import (
     create_task,
@@ -31,20 +37,37 @@ async def create_user_task(
     return await create_task(task, current_user.id, db)
 
 
-@router.get("/", response_model=List[Task])
+@router.get("/", response_model=PaginatedTaskResponse)
 async def get_user_tasks(
-    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, le=100, description="Page size"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    return await get_tasks_by_user(current_user.id, db)
+    tasks, total = await get_tasks_by_user(current_user.id, db, page, size)
+    pages = math.ceil(total / size) if total > 0 else 1
+
+    return PaginatedTaskResponse(
+        items=list(tasks),
+        meta=PaginationMeta(page=page, size=size, total=total, pages=pages),
+    )
 
 
-@router.get("/users/{user_id}", response_model=List[Task])
+@router.get("/users/{user_id}", response_model=PaginatedTaskResponse)
 async def admin_get_user_tasks(
     user_id: UUID,
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(10, ge=1, le=100, description="Page size"),
     _: User = Depends(require_admin()),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_tasks_by_user(user_id, db)
+    tasks, total = await get_tasks_by_user(user_id, db, page, size)
+    pages = math.ceil(total / size) if total > 0 else 1
+
+    return PaginatedTaskResponse(
+        items=list(tasks),
+        meta=PaginationMeta(page=page, size=size, total=total, pages=pages),
+    )
 
 
 @router.get("/{task_id}", response_model=Task)
@@ -55,8 +78,6 @@ async def get_user_task(
 ):
     task = await get_task_by_id(task_id, current_user.id, db)
     if not task:
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail="Task not found")
     return task
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -29,3 +29,15 @@ class Task(TaskBase):
 
     class Config:
         from_attributes = True
+
+
+class PaginationMeta(BaseModel):
+    page: int
+    size: int
+    total: int
+    pages: int
+
+
+class PaginatedTaskResponse(BaseModel):
+    items: List[Task]
+    meta: PaginationMeta

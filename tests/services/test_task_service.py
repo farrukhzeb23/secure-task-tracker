@@ -25,11 +25,40 @@ async def test_get_tasks_by_user(db: AsyncSession, test_user):
     await task_service.create_task(task1, test_user.id, db)
     await task_service.create_task(task2, test_user.id, db)
 
-    tasks = await task_service.get_tasks_by_user(test_user.id, db)
+    tasks, total = await task_service.get_tasks_by_user(test_user.id, db)
 
     assert len(tasks) == 2
+    assert total == 2
     assert any(task.title == "Task 1" for task in tasks)
     assert any(task.title == "Task 2" for task in tasks)
+
+
+async def test_get_tasks_by_user_pagination(db: AsyncSession, test_user):
+    # Create multiple tasks
+    for i in range(15):
+        task = TaskCreate(title=f"Task {i+1}", description=f"Description {i+1}")
+        await task_service.create_task(task, test_user.id, db)
+
+    # Test first page
+    tasks_page1, total = await task_service.get_tasks_by_user(
+        test_user.id, db, page=1, size=10
+    )
+    assert len(tasks_page1) == 10
+    assert total == 15
+
+    # Test second page
+    tasks_page2, total = await task_service.get_tasks_by_user(
+        test_user.id, db, page=2, size=10
+    )
+    assert len(tasks_page2) == 5
+    assert total == 15
+
+    # Test custom page size
+    tasks_small, total = await task_service.get_tasks_by_user(
+        test_user.id, db, page=1, size=5
+    )
+    assert len(tasks_small) == 5
+    assert total == 15
 
 
 async def test_get_task_by_id(db: AsyncSession, test_user):
