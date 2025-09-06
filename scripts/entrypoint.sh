@@ -7,7 +7,7 @@ echo "Starting Secure Task Tracker application..."
 
 # Log environment variables for debugging
 echo "Environment Variables:"
-echo "ENVIRONMENT: ${ENVIRONMENT:-development}"
+echo "ENV: ${ENV:-development}"
 echo "DB_HOST: ${DB_HOST:-db}"
 echo "DB_PORT: ${DB_PORT:-5432}"
 echo "DB_USER: ${DB_USER:-postgres}"
@@ -30,7 +30,7 @@ alembic upgrade head
 echo "Starting FastAPI application..."
 
 # Start the FastAPI application with Uvicorn
-if [ "$ENVIRONMENT" = "production" ]; then
+if [ "$ENV" = "production" ]; then
     # Production settings
     uvicorn app.main:app \
         --host 0.0.0.0 \
