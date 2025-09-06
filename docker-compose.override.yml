@@ -1,0 +1,19 @@
+# Development override
+services:
+  app:
+    build:
+      context: .
+      target: development
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/secure_task_tracker_db
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  db:
+    ports:
+      - "5433:5432"  # Different port for development
