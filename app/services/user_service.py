@@ -114,15 +114,12 @@ async def update_user(user_id: UUID, user_update: UserUpdate, db: AsyncSession) 
                 update(User).where(User.id == user_id).values(**update_data)
             )
 
-        # Handle role updates - commit basic updates first, then handle roles
+        # Handle role updates in same transaction
         if user_update.role_names is not None:
-            await db.commit()  # Commit basic field updates first
             # Get fresh user object for role assignment
             fresh_user = await get_user_by_id(user_id, db)
             await assign_roles_to_user(fresh_user, user_update.role_names, db)
-            await db.commit()  # Commit role updates
-        else:
-            await db.commit()  # Commit basic field updates
+        await db.commit()  # Commit all updates
 
         # Return updated user with relationships
         return await get_user_by_id(user_id, db)
